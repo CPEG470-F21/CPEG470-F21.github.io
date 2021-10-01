@@ -281,6 +281,7 @@ $("#login").on("click", ()=>{
       addChatrooms();
      
       let userRef = rtdb.ref(db, `/users/${UID}`);
+      rtdb.update(userRef, {isActive: true});
       rtdb.get(userRef).then(ss=>{ 
         let data=ss.val();
         userame = data.name;
@@ -293,4 +294,9 @@ $("#login").on("click", ()=>{
       
       
     }).catch(function(error) {    });
-})
+});
+
+$('#logout').on("click", ()=>{
+  let userRef = rtdb.ref(db, `/users/${UID}`);
+  rtdb.update(userRef, {isActive: false});
+});
