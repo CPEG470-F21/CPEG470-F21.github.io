@@ -24,8 +24,8 @@ let auth = fbauth.getAuth(app);
 
 //important global vars
 let receiver = "";
-let senderName = "";
-let senderID = "";
+let userame = "";
+let UID = "";
 let roomID = "";
 let users = [];
 let editMessage = false;
@@ -45,8 +45,8 @@ let addPeople = function(){
   $('#people').html("");
   users = [];
   
-  let peopleRef = rtdb.ref(db, "/users/");
-  rtdb.get(peopleRef).then(ss=>{ 
+  let usersRef = rtdb.ref(db, "/users/");
+  rtdb.get(usersRef).then(ss=>{ 
     let data=ss.val();
     
     Object.keys(data).map(id=>{
@@ -61,9 +61,9 @@ let addPeople = function(){
 //Create/update the list of current conversations
 let addChatrooms = function(){
   $('#chatrooms').html("");
-  let peopleRef = rtdb.ref(db, "/users/" + senderID + "/chats");
+  let userChatsRef = rtdb.ref(db, "/users/" + UID + "/chats");
   
-  rtdb.get(peopleRef).then(ss=>{ 
+  rtdb.get(userChatsRef).then(ss=>{ 
     let data=ss.val();
     
     Object.keys(data).map(id=>{
@@ -78,7 +78,7 @@ let addMessage = function(data){
   $('#chats').html("");
   
   Object.keys(data).map(id=>{
-    if(data[id].senderID == senderID){
+    if(data[id].senderID == UID){
       $('#chats').append(`<div class="messageContainer right"> <div class='message youSender' data-sender=${data[id].senderID} data-id=${id}>${data[id].text}</div> <p class="time">${data[id].timestamp}</p> </div>`)
     } else {
       $('#chats').append(`<div class="messageContainer left"> <p class="name">${data[id].sender}</p> <div class='message otherSender' data-sender=${data[id].senderID} data-id=${id}>${data[id].text}</div> <p class="time">${data[id].timestamp}</p>  </div>`);
@@ -110,8 +110,8 @@ $('#send').click(()=>{
   let date = getFormattedDate();
   
   if(editMessage){
-    let chatroomRef = rtdb.ref(db, "/chatrooms/" + roomID + "/messages/" + messageID);
-    rtdb.set(chatroomRef, {sender: senderName, senderID: senderID, text:$('#message').val(), timestamp: date, edited: true});
+    let messageRef = rtdb.ref(db, "/chatrooms/" + roomID + "/messages/" + messageID);
+    rtdb.set(messageRef, {sender: userame, senderID: UID, text:$('#message').val(), timestamp: date, edited: true});
     editMessage = false;
     messageID = "";
     $("#message").attr("placeholder", "message");
@@ -120,7 +120,7 @@ $('#send').click(()=>{
     return;
   }
   
-  if(!senderName || !senderID){
+  if(!userame || !UID){
     alert("Please sign in first");
     return;
   }
@@ -135,8 +135,8 @@ $('#send').click(()=>{
     return;
   } 
     
-  let chatroomRef = rtdb.ref(db, "/chatrooms/" + roomID + "/messages");
-  rtdb.push(chatroomRef, {sender: senderName, senderID: senderID, text:$('#message').val(), timestamp: date});
+  let chatRef = rtdb.ref(db, "/chatrooms/" + roomID + "/messages");
+  rtdb.push(chatRef, {sender: userame, senderID: UID, text:$('#message').val(), timestamp: date});
   $("#message").val("");
   
 });
@@ -145,7 +145,7 @@ $('#send').click(()=>{
 //update list of current conversations
 $('#newThread').click(()=>{
   
-  if(!senderName || !senderID){
+  if(!userame || !UID){
     alert("Please sign in first.");
     return;
   }
@@ -160,16 +160,16 @@ $('#newThread').click(()=>{
       } else {
         receiverID = ss.val().uid;
         
-        let theRef = rtdb.ref(db, "/chatrooms/");
-        rtdb.push(theRef, {nickname: "TEMP"}).then((snap) => {
+        let chatroomsRef = rtdb.ref(db, "/chatrooms/");
+        rtdb.push(chatroomsRef, {nickname: "TEMP"}).then((snap) => {
           roomID = snap.key;
 
           //add chatroom to senders chats
-          let peopleRef = rtdb.ref(db, "/users/" + senderID + "/chats");
-          rtdb.push(peopleRef, {chatroomID:roomID, nickname:receiver});
+          let senderChatsRef = rtdb.ref(db, "/users/" + UID + "/chats");
+          rtdb.push(senderChatsRef, {chatroomID:roomID, nickname:receiver});
           //add chatroom to receivers chats
-          peopleRef = rtdb.ref(db, "/users/" + receiverID + "/chats");
-          rtdb.push(peopleRef, {chatroomID:roomID, nickname:senderName});
+          let recvChatsRef = rtdb.ref(db, "/users/" + receiverID + "/chats");
+          rtdb.push(recvChatsRef, {chatroomID:roomID, nickname:userame});
 
           $("#chats").html("");
           addChatrooms();
@@ -188,7 +188,7 @@ $('#newThread').click(()=>{
 
 //Listener for clicking a message
 $("#chats").click((e)=> {
-  if(e.target.dataset['id'] && e.target.dataset['sender'] == senderID){
+  if(e.target.dataset['id'] && e.target.dataset['sender'] == UID){
     editMessage = true;
     messageID = e.target.dataset['id'];
     $("#message").attr("placeholder", "Type edit message here");
@@ -228,25 +228,25 @@ $("#register").on("click", ()=>{
     return;
   }
   
-  senderName = $('#regusername').val();
-  let userRef = rtdb.ref(db, `/usernames/${senderName}`);
+  userame = $('#regusername').val();
+  let userRef = rtdb.ref(db, `/usernames/${userame}`);
   rtdb.get(userRef).then(ss=>{ 
     if(ss.val() == null){
       fbauth.createUserWithEmailAndPassword(auth, email, p1).then(somedata=>{
-        senderID = somedata.user.uid;
-        senderName = $('#regusername').val(); //this will be a nickname
+        UID = somedata.user.uid;
+        userame = $('#regusername').val(); //this will be a nickname
 
-        let userRef = rtdb.ref(db, `/users/${senderID}`);
-        let data = {name:senderName, email:$('#regemail').val(), status:"NA", isActive:true, roles: {user: true}};
+        let userRef = rtdb.ref(db, `/users/${UID}`);
+        let data = {name:userame, email:$('#regemail').val(), status:"NA", isActive:true, roles: {user: true}};
         rtdb.set(userRef, data);
 
-        let usernameRef = rtdb.ref(db, `/usernames/${senderName}`);
-        data = {uid:senderID};
+        let usernameRef = rtdb.ref(db, `/usernames/${userame}`);
+        data = {uid:UID};
         rtdb.set(usernameRef, data);
 
         //every user has the main full group chat room
-        let userChatRef = rtdb.ref(db, "/users/" + senderID + "/chats");
-        rtdb.push(userChatRef, {chatroomID: "-Mjz_495cBqQw4wt-fgv", nickname:"Full Group"});
+        let userChatsRef = rtdb.ref(db, "/users/" + UID + "/chats");
+        rtdb.push(userChatsRef, {chatroomID: "-Mjz_495cBqQw4wt-fgv", nickname:"Full Group"});
 
         receiver = "";
         $("#chats").html(""); 
@@ -256,7 +256,7 @@ $("#register").on("click", ()=>{
         
         document.querySelector("div.login").style.display = "none";
         document.querySelector("div.currUser").style.display = "block";
-        document.getElementById("currentUserName").innerHTML = "Current User: " + senderName;
+        document.getElementById("currentUserName").innerHTML = "Current User: " + userame;
         
 
       }).catch(function(error) { });
@@ -276,18 +276,18 @@ $("#login").on("click", ()=>{
       $("#chats").html("");
       
       console.log(somedata.user);
-      senderID = somedata.user.uid;
+      UID = somedata.user.uid;
       
       addChatrooms();
      
-      let userRef = rtdb.ref(db, `/users/${senderID}`);
+      let userRef = rtdb.ref(db, `/users/${UID}`);
       rtdb.get(userRef).then(ss=>{ 
         let data=ss.val();
-        senderName = data.name;
+        userame = data.name;
         
         document.querySelector("div.login").style.display = "none";
         document.querySelector("div.currUser").style.display = "block";
-        document.getElementById("currentUserName").innerHTML = "Current User: " + senderName;
+        document.getElementById("currentUserName").innerHTML = "Current User: " + userame;
       });
       
       
