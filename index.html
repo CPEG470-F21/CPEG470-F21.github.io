@@ -8,16 +8,22 @@
 </head>
 <body>
 <!-- partial:index.partial.html -->
-<div class="login" id="signin-up">
+
+<div class="container" id="loginContainer">
+  <input type="text" id="logemail" placeholder="Login with Email"/>
+  <input type="password" id="logpass" placeholder="Login Password"/>
+  <button type="button" id="login">Click Here To Login</button>
+  <p id="clickToRegister"> Click here to register </p> 
+</div>
+
+
+<div class="container" id="registerContainer">
   <input type="text" id="regemail" placeholder="Register Email"/>
   <input type="text" id="regusername" placeholder="Register username"/>
   <input type="password" id="regpass1" placeholder="Register Password"/>
   <input type="password" id="regpass2" placeholder="Confirm Password"/>
   <button type="button" id="register">Click Here To Register</button>
-  <hr>
-  <input type="text" id="logemail" placeholder="Login with Email"/>
-  <input type="password" id="logpass" placeholder="Login Password"/>
-  <button type="button" id="login">Click Here To Login</button>
+  <p id="clickToLogin"> Already have an account? Click here to log in </p> 
 </div>
 
 <div class="currUser">
@@ -28,23 +34,25 @@
 </div>
 
 
-<div class="sidebar">
-  <p class="whiteText" id="people-header">Click me to refresh list of the current users.</p>
-  <ul class="whiteText" id="people"> </ul>
-  <p class="whiteText">Click a chatroom/user below to select conversation.</p>
-  <ul class="whiteText" id="chatrooms"> </ul>
-  <input id="recv" placeholder="send to: any username"></input>
-  <button id="newThread">Click me to start new conversation</button>
-</div>
+<div class="main" id="mainContainer">
+  <div class="sidebar">
+    <p class="whiteText" id="people-header">Click me to refresh list of the current users.</p>
+    <ul class="whiteText" id="people"> </ul>
+    <p class="whiteText">Click a chatroom/user below to select conversation.</p>
+    <ul class="whiteText" id="chatrooms"> </ul>
+    <input id="recv" placeholder="send to: any username"></input>
+    <button id="newThread">Click me to start new conversation</button>
+  </div>
 
 
-<div class="chatbox">
-  
-  <div id="chats"> </div>
-  
-  <input id="message" placeholder="message"></input>
-  <button id="send">Send Message</button>
-  
+  <div class="chatbox">
+    
+    <div id="chats"> </div>
+    
+    <input id="message" placeholder="message"></input>
+    <button id="send">Send Message</button>
+    
+  </div>
 </div>
 <!-- partial -->
   <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js'></script><script type="module" src="./script.js"></script>

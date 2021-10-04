@@ -27,7 +27,6 @@ let receiver = "";
 let userame = "";
 let UID = "";
 let roomID = "";
-let users = [];
 let editMessage = false;
 let messageID = "";
 
@@ -43,22 +42,23 @@ let getFormattedDate = function(){
 //create list of current users/accounts
 let addPeople = function(){
   $('#people').html("");
-  users = [];
   
   let usersRef = rtdb.ref(db, "/users/");
   rtdb.get(usersRef).then(ss=>{ 
     let data=ss.val();
     
     Object.keys(data).map(id=>{
-      //if(data[id].isActive)
-      $('#people').append(`<li>${data[id].name}</li>`);
-      users.push(data[id].name);
+      if(data[id].isActive){
+        $('#people').append(`<li class='active'>${data[id].name}</li>`);
+      } else {
+        $('#people').append(`<li class='inactive'>${data[id].name}</li>`);
+      }
     });
   });
 }
 
 
-//Create/update the list of current conversations
+//Create/update the list of this users current conversations
 let addChatrooms = function(){
   $('#chatrooms').html("");
   let userChatsRef = rtdb.ref(db, "/users/" + UID + "/chats");
@@ -71,7 +71,6 @@ let addChatrooms = function(){
     });
   });
 }
-
 
 //function to clear the messages and remake it with the new data
 let addMessage = function(data){  
@@ -153,30 +152,32 @@ $('#newThread').click(()=>{
   if($("#recv").val()){
     receiver = $("#recv").val();
     let receiverID = "";
+
+    //get the userID of the username to start new conversation
     let userRef = rtdb.ref(db, `/usernames/${receiver}`);
     rtdb.get(userRef).then(ss=>{ 
       if(ss.val() == null){
         alert("This user does not exist");
       } else {
-        receiverID = ss.val().uid;
+        receiverID = ss.val().uid;  //getting userID
         
+        //create a new chatroom between these two users
         let chatroomsRef = rtdb.ref(db, "/chatrooms/");
         rtdb.push(chatroomsRef, {nickname: "TEMP"}).then((snap) => {
           roomID = snap.key;
 
-          //add chatroom to senders chats
-          let senderChatsRef = rtdb.ref(db, "/users/" + UID + "/chats");
-          rtdb.push(senderChatsRef, {chatroomID:roomID, nickname:receiver});
-          //add chatroom to receivers chats
-          let recvChatsRef = rtdb.ref(db, "/users/" + receiverID + "/chats");
-          rtdb.push(recvChatsRef, {chatroomID:roomID, nickname:userame});
+          //add chatroom to senders list of chats
+          let senderChatsRef = rtdb.ref(db, "/users/" + UID + "/chats/" + roomID);
+          rtdb.set(senderChatsRef, {chatroomID:roomID, nickname:receiver});
+          //add chatroom to receivers list of chats
+          let recvChatsRef = rtdb.ref(db, "/users/" + receiverID + "/chats/" + roomID);
+          rtdb.set(recvChatsRef, {chatroomID:roomID, nickname:userame});
 
           $("#chats").html("");
           addChatrooms();
 
           alert("If new messages don't show, click chatroom name again");
         });
-        
       }
     });
     
@@ -187,7 +188,9 @@ $('#newThread').click(()=>{
 
 
 //Listener for clicking a message
+//used for edit message
 $("#chats").click((e)=> {
+  //only let a user edit a message if it was sent by them
   if(e.target.dataset['id'] && e.target.dataset['sender'] == UID){
     editMessage = true;
     messageID = e.target.dataset['id'];
@@ -206,19 +209,18 @@ $("#chatrooms").click((e)=> {
   }
 });
 
-
-addPeople();
+//refresh list of online users when clicked
 $("#people-header").click(()=>{
   addPeople();
 });
 
 
-
 fbauth.onAuthStateChanged(auth, user => {
-  //$('#login').style.display = "none";
+  console.log(auth);
+  console.log(user);
 });
 
-
+//Register a new user
 $("#register").on("click", ()=>{
   let email = $("#regemail").val();
   let p1 = $("#regpass1").val();
@@ -228,37 +230,31 @@ $("#register").on("click", ()=>{
     return;
   }
   
+  //check if the username already exists
   userame = $('#regusername').val();
   let userRef = rtdb.ref(db, `/usernames/${userame}`);
   rtdb.get(userRef).then(ss=>{ 
+    //if the username does not exist, make a new user
     if(ss.val() == null){
       fbauth.createUserWithEmailAndPassword(auth, email, p1).then(somedata=>{
         UID = somedata.user.uid;
-        userame = $('#regusername').val(); //this will be a nickname
+        userame = $('#regusername').val();
 
+        //create the user
         let userRef = rtdb.ref(db, `/users/${UID}`);
         let data = {name:userame, email:$('#regemail').val(), status:"NA", isActive:true, roles: {user: true}};
         rtdb.set(userRef, data);
-
+        //add username
         let usernameRef = rtdb.ref(db, `/usernames/${userame}`);
         data = {uid:UID};
         rtdb.set(usernameRef, data);
 
         //every user has the main full group chat room
-        let userChatsRef = rtdb.ref(db, "/users/" + UID + "/chats");
-        rtdb.push(userChatsRef, {chatroomID: "-Mjz_495cBqQw4wt-fgv", nickname:"Full Group"});
+        let userChatsRef = rtdb.ref(db, "/users/" + UID + "/chats/-Mjz_495cBqQw4wt-fgv");
+        rtdb.set(userChatsRef, {chatroomID: "-Mjz_495cBqQw4wt-fgv", nickname:"Full Group"});
 
-        receiver = "";
-        $("#chats").html(""); 
-        addChatrooms();
-        addPeople();
+        setupMainContent();
         
-        
-        document.querySelector("div.login").style.display = "none";
-        document.querySelector("div.currUser").style.display = "block";
-        document.getElementById("currentUserName").innerHTML = "Current User: " + userame;
-        
-
       }).catch(function(error) { });
 
     } else { alert("Username Taken"); }
@@ -267,36 +263,71 @@ $("#register").on("click", ()=>{
 });
 
 
+//Log in a user that already exists
 $("#login").on("click", ()=>{
   let email = $("#logemail").val();
   let pwd = $("#logpass").val();
   fbauth.signInWithEmailAndPassword(auth, email, pwd).then(
     somedata=>{
-      receiver = "";
-      $("#chats").html("");
       
       console.log(somedata.user);
       UID = somedata.user.uid;
       
-      addChatrooms();
-     
+      //set user activity to true
       let userRef = rtdb.ref(db, `/users/${UID}`);
       rtdb.update(userRef, {isActive: true});
+      //get the users username
       rtdb.get(userRef).then(ss=>{ 
         let data=ss.val();
         userame = data.name;
-        
-        document.querySelector("div.login").style.display = "none";
-        document.querySelector("div.currUser").style.display = "block";
-        document.getElementById("currentUserName").innerHTML = "Current User: " + userame;
+
+        setupMainContent();
       });
-      
-      
       
     }).catch(function(error) {    });
 });
 
+//manipulate the view to go from login/register to displaying main content
+let setupMainContent = function(){
+  //load this users chatrooms and load the list of users
+  receiver = "";
+  $("#chats").html("");
+  addChatrooms();
+  addPeople();
+    
+  //hide login and register, show main content
+  document.getElementById("loginContainer").style.display = "none";
+  document.getElementById("registerContainer").style.display = "none";
+  document.getElementById("mainContainer").style.display = "block";
+  document.querySelector("div.currUser").style.display = "block";
+  document.getElementById("currentUserName").innerHTML = "Current User: " + userame;
+}
+
+
+//log the current user out
 $('#logout').on("click", ()=>{
+  //update active status
   let userRef = rtdb.ref(db, `/users/${UID}`);
   rtdb.update(userRef, {isActive: false});
+
+  //sign out
+  auth.signOut();
+
+  //manipulate view to display login screen
+  document.getElementById("loginContainer").style.display = "flex";
+  document.getElementById("registerContainer").style.display = "none";
+  document.getElementById("mainContainer").style.display = "none";
+  document.querySelector("div.currUser").style.display = "none";
 });
+
+$("#clickToRegister").on("click", ()=>{
+  document.getElementById("loginContainer").style.display = "none";
+  document.getElementById("registerContainer").style.display = "flex";
+});
+
+$("#clickToLogin").on("click", ()=>{
+  document.getElementById("loginContainer").style.display = "flex";
+  document.getElementById("registerContainer").style.display = "none";
+});
+
+document.getElementById("registerContainer").style.display = "none";
