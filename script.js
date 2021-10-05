@@ -49,9 +49,9 @@ let addPeople = function(){
     
     Object.keys(data).map(id=>{
       if(data[id].isActive){
-        $('#people').append(`<li class='active'>${data[id].name}</li>`);
+        $('#people').append(`<div class="tooltip"> <img class='active' src=${data[id].profileImage}></img> <span class="tooltiptext active">${data[id].name}</span> </div>`);
       } else {
-        $('#people').append(`<li class='inactive'>${data[id].name}</li>`);
+        $('#people').append(`<div class="tooltip"> <img class='inactive' src=${data[id].profileImage}></img> <span class="tooltiptext inactive">${data[id].name}</span> </div>`);
       }
     });
   });
@@ -67,7 +67,7 @@ let addChatrooms = function(){
     let data=ss.val();
     
     Object.keys(data).map(id=>{
-      $('#chatrooms').append(`<li data-chatid=${data[id].chatroomID}>${data[id].nickname}</li>`);
+      $('#chatrooms').append(`<div class='chat' data-name=${data[id].nickname} data-chatid=${data[id].chatroomID}>${data[id].nickname}</div>`);
     });
   });
 }
@@ -78,9 +78,9 @@ let addMessage = function(data){
   
   Object.keys(data).map(id=>{
     if(data[id].senderID == UID){
-      $('#chats').append(`<div class="messageContainer right"> <div class='message youSender' data-sender=${data[id].senderID} data-id=${id}>${data[id].text}</div> <p class="time">${data[id].timestamp}</p> </div>`)
+      $('#chats').append(`<div class="messageContainer right"> <div class='message youSender' data-sender=${data[id].senderID} data-id=${id}>${data[id].text}</div> <p class="time chatinfo">${data[id].timestamp}</p> </div>`)
     } else {
-      $('#chats').append(`<div class="messageContainer left"> <p class="name">${data[id].sender}</p> <div class='message otherSender' data-sender=${data[id].senderID} data-id=${id}>${data[id].text}</div> <p class="time">${data[id].timestamp}</p>  </div>`);
+      $('#chats').append(`<div class="messageContainer left"> <p class="name chatinfo">${data[id].sender}</p> <div class='message otherSender' data-sender=${data[id].senderID} data-id=${id}>${data[id].text}</div> <p class="time chatinfo">${data[id].timestamp}</p>  </div>`);
     }
   });
 }
@@ -202,8 +202,8 @@ $("#chats").click((e)=> {
 
 //Click listener to select a conversation thread
 $("#chatrooms").click((e)=> {
-  if(e.target && e.target.nodeName == "LI") {
-    receiver = e.target.innerText;
+  if(e.target) {
+    receiver = e.target.dataset['name'];
     roomID = e.target.dataset['chatid'];
     createListener();
   }
@@ -242,7 +242,7 @@ $("#register").on("click", ()=>{
 
         //create the user
         let userRef = rtdb.ref(db, `/users/${UID}`);
-        let data = {name:userame, email:$('#regemail').val(), status:"NA", isActive:true, roles: {user: true}};
+        let data = {name:userame, email:$('#regemail').val(), status:"NA", isActive:true, roles: {user: true}, profileImage: "https://static8.depositphotos.com/1009634/988/v/600/depositphotos_9883921-stock-illustration-no-user-profile-picture.jpg"};
         rtdb.set(userRef, data);
         //add username
         let usernameRef = rtdb.ref(db, `/usernames/${userame}`);
@@ -281,6 +281,7 @@ $("#login").on("click", ()=>{
         let data=ss.val();
         userame = data.name;
 
+        $('#currUserImage').attr("src", data.profileImage);
         setupMainContent();
       });
       
@@ -331,3 +332,10 @@ $("#clickToLogin").on("click", ()=>{
 });
 
 document.getElementById("registerContainer").style.display = "none";
+
+//#655dfe
+
+//#333333
+//#323435
+
+//#373e44
